@@ -1,4 +1,4 @@
-"""Single entry point: dbt build (ETL + tests) -> queries -> report.
+"""Single entry point: dbt build (ETL + tests) -> queries -> report -> analyses -> memo.
 
 Usage:
     python -m src.pipeline              # full run
@@ -12,6 +12,8 @@ import time
 from src.build_db import build_database, table_row_counts
 from src.config import DB_PATH, DBT_TARGET_DIR, RAW_DIR, REPORTS_DIR, SQL_DIR
 from src.export_powerbi import export_mart
+from src.insights import run as run_insights
+from src.memo import write_memo
 from src.quality import assert_no_errors, collect_test_results, to_markdown
 from src.queries import df_to_markdown, run_all, write_catalogue
 from src.report import build_figures, write_executive_summary
@@ -25,7 +27,7 @@ def main() -> None:
 
     con = build_database(RAW_DIR, DB_PATH)
     counts = table_row_counts(con)
-    print("[1/4] dbt build done:", ", ".join(f"{t}={n:,}" for t, n in counts.items()))
+    print("[1/5] dbt build done:", ", ".join(f"{t}={n:,}" for t, n in counts.items()))
 
     checks = collect_test_results(DBT_TARGET_DIR)
     REPORTS_DIR.mkdir(parents=True, exist_ok=True)
@@ -35,12 +37,12 @@ def main() -> None:
         "`olist_dbt/tests/`). `warn` = known source issue, monitored; any other failure "
         "stops `dbt build`.\n\n" + to_markdown(checks), encoding="utf-8")
     assert_no_errors(checks)
-    print(f"[2/4] dbt tests: {(checks.status == 'PASS').sum()} pass, "
+    print(f"[2/5] dbt tests: {(checks.status == 'PASS').sum()} pass, "
           f"{(checks.status == 'WARN').sum()} warn, {(checks.status == 'FAIL').sum()} fail")
 
     results = run_all(con)
     write_catalogue(results)
-    print(f"[3/4] {len(results)} analytical queries run -> reports/query_results, docs/QUERIES.md")
+    print(f"[3/5] {len(results)} analytical queries run -> reports/query_results, docs/QUERIES.md")
 
     figures = build_figures(con, results)
     write_executive_summary(results, figures)
@@ -50,7 +52,14 @@ def main() -> None:
         "(`sql/report/powerbi_validation.sql`), reporting period 2017-01 to 2018-08. "
         "The DAX measures in `powerbi/POWERBI_GUIDE.md` must reproduce these values.\n\n"
         + df_to_markdown(targets) + "\n", encoding="utf-8")
-    print(f"[4/4] {len(figures)} figures + reports/EXECUTIVE_SUMMARY.md + powerbi_validation.md")
+    print(f"[4/5] {len(figures)} figures + reports/EXECUTIVE_SUMMARY.md + powerbi_validation.md")
+
+    extra = run_insights(con)
+    write_memo(results, extra["study"], extra["forecast"])
+    est = extra["study"]["estimates"]
+    print(f"[5/5] delay study: late effect {est['effect'].iloc[0]:+.2f} (raw) to "
+          f"{est['effect'].iloc[2]:+.2f} (seller FE) stars; forecast best model = "
+          f"{extra['forecast']['best_model']} -> ANALYSIS_DELAY_AND_FORECAST.md, STAKEHOLDER_MEMO.md")
 
     if args.powerbi:
         export_mart(con)
