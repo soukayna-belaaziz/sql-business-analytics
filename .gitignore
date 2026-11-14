@@ -14,3 +14,8 @@ __pycache__/
 .DS_Store
 .idea/
 .vscode/
+# dbt artefacts (regenerate with `make pipeline` / `make docs`)
+olist_dbt/target/
+olist_dbt/logs/
+olist_dbt/dbt_packages/
+logs/

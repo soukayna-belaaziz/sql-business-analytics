@@ -1,0 +1,154 @@
+version: 2
+
+models:
+  - name: fact_orders
+    description: >
+      One row per order (all statuses). Carries the business rules used by every
+      downstream query, the dashboard and the Power BI measures.
+    data_tests:
+      - equal_row_count:
+          name: rowcount_stg_orders_vs_fact_orders
+          arguments: {compare_model: ref('stg_orders')}
+          config: {meta: {category: reconciliation}}
+      - expression_is_true:
+          name: warn_orders_without_item_line
+          arguments: {expression: "items_count > 0"}
+          config: {severity: warn, meta: {category: completeness}}
+      - expression_is_true:
+          name: warn_delivered_without_delivery_timestamp
+          arguments: {expression: "not (order_status = 'delivered' and delivered_customer_ts is null)"}
+          config: {severity: warn, meta: {category: completeness}}
+      - expression_is_true:
+          name: warn_delivered_before_purchase
+          arguments: {expression: "delivered_customer_ts >= purchase_ts"}
+          config: {severity: warn, meta: {category: validity}}
+      - expression_is_true:
+          name: warn_handed_to_carrier_before_purchase
+          arguments: {expression: "delivered_carrier_ts >= purchase_ts"}
+          config: {severity: warn, meta: {category: validity}}
+      - expression_is_true:
+          name: warn_valid_sale_without_review
+          arguments: {expression: "not (is_valid_sale and review_score is null)"}
+          config: {severity: warn, meta: {category: completeness}}
+    columns:
+      - name: order_id
+        description: Order identifier (primary key).
+        data_tests: [unique, not_null]
+      - name: customer_key
+        description: customer_unique_id of the buyer (FK to dim_customer).
+        data_tests:
+          - not_null
+          - relationships:
+              arguments: {to: ref('dim_customer'), field: customer_key}
+      - name: purchase_date_key
+        description: Purchase date as YYYYMMDD (FK to dim_date).
+        data_tests:
+          - not_null
+          - relationships:
+              arguments: {to: ref('dim_date'), field: date_key}
+      - name: purchase_ts
+        data_tests: [not_null]
+      - name: order_status
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [created, approved, invoiced, processing, shipped, delivered, canceled, unavailable]
+      - name: is_valid_sale
+        description: Status not canceled/unavailable and at least one item line.
+        data_tests: [not_null]
+      - name: items_value
+        description: Merchandise revenue of the order (sum of item price, BRL, freight excluded).
+      - name: review_score
+        description: Latest review score (1-5), NULL when the order was not reviewed.
+        data_tests:
+          - accepted_values:
+              arguments: {values: [1, 2, 3, 4, 5], quote: false}
+      - name: delay_days
+        description: Calendar days delivered after (+) or before (-) the estimated date.
+      - name: is_on_time
+        description: Delivered on or before the estimated date; NULL if not delivered.
+      - name: customer_order_seq
+        description: Rank of this valid order among the customer's valid orders (1 = first purchase).
+
+  - name: fact_order_items
+    description: One row per order line; revenue, category and seller analysis.
+    data_tests:
+      - unique_combination:
+          name: pk_fact_order_items
+          arguments: {columns: [order_id, order_item_id]}
+      - equal_row_count:
+          name: rowcount_stg_order_items_vs_fact_order_items
+          arguments: {compare_model: ref('stg_order_items')}
+          config: {meta: {category: reconciliation}}
+      - expression_is_true:
+          name: range_item_price_positive
+          arguments: {expression: "price > 0"}
+          config: {meta: {category: validity}}
+      - expression_is_true:
+          name: range_freight_non_negative
+          arguments: {expression: "freight_value >= 0"}
+          config: {meta: {category: validity}}
+    columns:
+      - name: product_key
+        data_tests:
+          - not_null
+          - relationships:
+              name: fk_fact_order_items_product_key__dim_product
+              arguments: {to: ref('dim_product'), field: product_key}
+      - name: seller_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments: {to: ref('dim_seller'), field: seller_key}
+      - name: price
+        description: Item price in BRL (merchandise revenue).
+        data_tests: [not_null]
+      - name: freight_value
+        data_tests: [not_null]
+      - name: is_shipped_late
+        description: Seller handed the parcel to the carrier after the shipping limit.
+
+  - name: fact_payments
+    description: One row per payment record (order_id, payment_sequential).
+    data_tests:
+      - unique_combination:
+          arguments: {columns: [order_id, payment_sequential]}
+      - equal_row_count:
+          name: rowcount_stg_order_payments_vs_fact_payments
+          arguments: {compare_model: ref('stg_order_payments')}
+          config: {meta: {category: reconciliation}}
+      - expression_is_true:
+          name: range_payment_value_non_negative
+          arguments: {expression: "payment_value >= 0"}
+          config: {meta: {category: validity}}
+
+  - name: dim_customer
+    description: One row per real person (customer_unique_id), location of the latest order, cohort month.
+    columns:
+      - name: customer_key
+        data_tests: [unique, not_null]
+      - name: cohort_month
+        description: Month of the first valid purchase (YYYY-MM); NULL if the person never had a valid sale.
+
+  - name: dim_product
+    description: Product with English category ('unknown' when missing).
+    data_tests:
+      - expression_is_true:
+          name: warn_products_without_category
+          arguments: {expression: "category <> 'unknown'"}
+          config: {severity: warn, meta: {category: completeness}}
+    columns:
+      - name: product_key
+        data_tests: [unique, not_null]
+
+  - name: dim_seller
+    description: Seller with state and IBGE macro-region.
+    columns:
+      - name: seller_key
+        data_tests: [unique, not_null]
+
+  - name: dim_date
+    description: Calendar with the reporting-period flag (Jan 2017 to Aug 2018, complete months).
+    columns:
+      - name: date_key
+        data_tests: [unique, not_null]

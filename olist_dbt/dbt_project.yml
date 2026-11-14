@@ -1,0 +1,42 @@
+# dbt project for the Olist star schema (dbt-core + dbt-duckdb).
+# Build with:  python -m src.build_db        (wraps `dbt build`, see src/dbt_runner.py)
+# or directly: cd olist_dbt && dbt build --profiles-dir . --vars '{raw_dir: ../data/raw}'
+name: olist
+version: "1.0.0"
+config-version: 2
+profile: olist
+
+model-paths: ["models"]
+seed-paths: ["seeds"]
+test-paths: ["tests"]
+target-path: "target"
+clean-targets: ["target", "logs"]
+
+vars:
+  # Folder that holds the raw Olist CSVs. Overridden by the Python wrapper
+  # (absolute path to data/raw, or to tests/fixtures in pytest).
+  raw_dir: "../data/raw"
+  # Reporting period: complete months only (see dim_date.is_reporting_period).
+  reporting_start: "2017-01-01"
+  reporting_end: "2018-08-31"
+
+models:
+  olist:
+    +materialized: table
+    staging:
+      +docs: {node_color: "#8fa3b8"}
+    clean:
+      +docs: {node_color: "#5b7fa6"}
+    intermediate:
+      +materialized: ephemeral
+    marts:
+      +docs: {node_color: "#2f5d8a"}
+
+seeds:
+  olist:
+    ref_state_region:
+      +column_types: {state: varchar, region: varchar}
+
+flags:
+  send_anonymous_usage_stats: false
+  use_colors: false

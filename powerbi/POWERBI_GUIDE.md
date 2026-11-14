@@ -32,7 +32,7 @@ not committed to git):
 | `fact_order_items.csv` | one row per order line | 112,650 | `order_id` + `order_item_id` |
 | `fact_payments.csv` | one row per payment record | 103,886 | `order_id` + `payment_sequential` |
 
-Business definitions are the same as in SQL (see `sql/mart/03_mart.sql`):
+Business definitions are the same as in SQL (see `olist_dbt/models/marts/fact_orders.sql`):
 revenue = item `price` (freight excluded); only rows with `is_valid_sale = true`
 count as sales; reporting period = Jan 2017 - Aug 2018 (`dim_date[is_reporting_period]`).
 

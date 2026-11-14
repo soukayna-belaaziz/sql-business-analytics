@@ -1,0 +1,36 @@
+version: 2
+
+models:
+  - name: stg_customers
+    description: Typed copy of the customers CSV.
+  - name: stg_orders
+    description: Typed copy of the orders CSV.
+    columns:
+      - name: order_id
+        data_tests:
+          - not_null
+  - name: stg_order_items
+    description: Typed copy of the order-items CSV (price and freight as DECIMAL(12,2)).
+    columns:
+      - name: order_id
+        data_tests:
+          - relationships:
+              name: fk_stg_order_items_order_id__stg_orders
+              arguments: {to: ref('stg_orders'), field: order_id}
+              config: {meta: {category: referential_integrity}}
+  - name: stg_order_payments
+    description: Typed copy of the payments CSV.
+  - name: stg_order_reviews
+    description: Typed copy of the reviews CSV. Not unique on order_id (see warning test).
+    columns:
+      - name: order_id
+        data_tests:
+          - unique:
+              name: warn_stg_order_reviews_more_than_one_review_per_order
+              config: {severity: warn, meta: {category: duplicates}}
+  - name: stg_products
+    description: Typed copy of the products CSV.
+  - name: stg_sellers
+    description: Typed copy of the sellers CSV.
+  - name: stg_category_translation
+    description: Portuguese to English category names.

@@ -1,7 +1,8 @@
-"""Build the DuckDB database: staging -> clean -> mart.
+"""Build the DuckDB database with dbt: seeds, staging -> clean -> mart, tests.
 
-The SQL lives in ``sql/``; this module only reads the files, substitutes the
-raw-data folder and executes them in order.
+``dbt build`` runs models and their tests in DAG order, so a failing
+error-level test stops every model downstream of it. The SQL lives in
+``olist_dbt/models``; this module only calls dbt and opens the result.
 """
 from __future__ import annotations
 
@@ -11,33 +12,27 @@ from pathlib import Path
 
 import duckdb
 
-from src.config import DB_PATH, ETL_SCRIPTS, MART_TABLES, RAW_DIR
-
-
-def render_sql(path: Path, raw_dir: Path) -> str:
-    """Return the SQL text of ``path`` with ``{raw_dir}`` filled in."""
-    text = path.read_text(encoding="utf-8")
-    return text.replace("{raw_dir}", raw_dir.resolve().as_posix())
+from src.config import DB_PATH, DBT_TARGET_DIR, MART_TABLES, RAW_DIR
+from src.dbt_runner import run_dbt
 
 
 def build_database(
     raw_dir: Path = RAW_DIR,
-    db_path: Path | str = DB_PATH,
-    scripts: tuple[Path, ...] = ETL_SCRIPTS,
+    db_path: Path = DB_PATH,
+    target_dir: Path = DBT_TARGET_DIR,
 ) -> duckdb.DuckDBPyConnection:
-    """Run the ETL scripts against ``raw_dir`` and return an open connection.
-
-    ``db_path`` may be ``":memory:"`` (used by the tests).
-    """
-    if not raw_dir.exists():
+    """Run ``dbt build`` on ``raw_dir`` into a fresh ``db_path``; return a connection."""
+    if not Path(raw_dir).exists():
         raise FileNotFoundError(
             f"{raw_dir} not found - run `python data/download_data.py` first")
-    if db_path != ":memory:":
-        Path(db_path).parent.mkdir(parents=True, exist_ok=True)
-        Path(db_path).unlink(missing_ok=True)
+    db_path = Path(db_path)
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    db_path.unlink(missing_ok=True)
+    run_dbt(["build"], raw_dir, db_path, target_dir)
     con = duckdb.connect(str(db_path))
-    for script in scripts:
-        con.execute(render_sql(script, raw_dir))
+    # dbt-duckdb may keep its in-process instance open: flush the WAL so the
+    # file on disk is complete (it is copied by the tests and the dashboard).
+    con.execute("CHECKPOINT")
     return con
 
 

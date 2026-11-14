@@ -1,0 +1,10 @@
+# Local DuckDB profile. The database file is set by the Python wrapper through
+# the OLIST_DUCKDB_PATH environment variable (default: ../data/olist.duckdb).
+olist:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: "{{ env_var('OLIST_DUCKDB_PATH', '../data/olist.duckdb') }}"
+      schema: main
+      threads: 2

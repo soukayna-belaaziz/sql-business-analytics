@@ -1,0 +1,44 @@
+version: 2
+
+models:
+  - name: clean_customers
+    description: Trimmed text, zip codes padded to 5 digits, upper-case state; one row per customer_id.
+    columns:
+      - name: customer_id
+        data_tests: [unique, not_null]
+  - name: clean_orders
+    description: Lower-case status, renamed timestamps, estimated delivery as DATE. All orders kept.
+    columns:
+      - name: order_id
+        data_tests: [unique, not_null]
+      - name: order_status
+        data_tests:
+          - accepted_values:
+              name: domain_clean_orders_order_status
+              arguments:
+                values: [created, approved, invoiced, processing, shipped, delivered, canceled, unavailable]
+              config: {meta: {category: validity}}
+  - name: clean_order_items
+    description: Deduplicated on (order_id, order_item_id).
+  - name: clean_order_payments
+    description: Lower-case payment type, 0 instalments recoded to 1.
+  - name: clean_order_reviews
+    description: At most one review per order (latest answered review kept).
+    columns:
+      - name: order_id
+        data_tests: [unique]
+  - name: clean_products
+    description: English category attached; 2 missing translations filled; no category -> 'unknown'.
+  - name: clean_sellers
+    description: Trimmed text, zip codes padded, upper-case state.
+
+seeds:
+  - name: ref_state_region
+    description: Brazilian state (UF) to IBGE macro-region.
+    columns:
+      - name: state
+        data_tests: [unique, not_null]
+      - name: region
+        data_tests:
+          - accepted_values:
+              arguments: {values: [North, Northeast, Center-West, Southeast, South]}
