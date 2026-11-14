@@ -9,7 +9,8 @@
 --                     fact_payments (1 row per payment instalment plan)
 --
 -- Business definitions (used everywhere downstream, including Power BI):
---   * Valid sale      : order_status NOT IN ('canceled', 'unavailable')
+--   * Valid sale      : order_status NOT IN ('canceled', 'unavailable') and the
+--                       order has at least one item line (8 orders do not)
 --   * Revenue         : SUM(item price), freight excluded (merchandise revenue, BRL)
 --   * Gross value     : price + freight = what the customer paid for the items
 --   * On-time         : delivered to customer on or before the estimated date
@@ -99,7 +100,9 @@ WITH base AS (
         o.order_id,
         c.customer_unique_id                               AS customer_key,
         o.order_status,
-        o.order_status NOT IN ('canceled', 'unavailable')  AS is_valid_sale,
+        -- valid sale: not canceled/unavailable AND has at least one item line
+        o.order_status NOT IN ('canceled', 'unavailable')
+            AND i.order_id IS NOT NULL                     AS is_valid_sale,
         o.purchase_ts,
         CAST(strftime(o.purchase_ts, '%Y%m%d') AS INTEGER) AS purchase_date_key,
         o.approved_ts,
