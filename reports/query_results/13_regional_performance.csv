@@ -1,0 +1,6 @@
+region,customers,orders,revenue_brl,revenue_pct,aov_brl,freight_to_revenue_pct,avg_delivery_days,on_time_pct,avg_review
+Southeast,64878,67150,8796311.0,65.4,131.0,15.2,10.7,93.9,4.14
+South,13504,13946,1929388.0,14.3,138.3,17.7,14.0,94.1,4.16
+Northeast,9020,9273,1532226.0,11.4,165.2,21.8,20.0,87.2,3.91
+Center-West,5528,5707,858871.0,6.4,150.5,17.7,15.0,93.5,4.09
+North,1773,1829,332733.0,2.5,181.9,22.7,22.6,91.4,3.98

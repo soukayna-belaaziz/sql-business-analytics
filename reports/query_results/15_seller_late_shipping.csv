@@ -1,0 +1,5 @@
+late_shipping_band,sellers,orders,revenue_pct,late_ship_pct,avg_review_weighted,negative_review_pct
+1 < 5% late,209,34054,41.8,2.0,4.15,13.3
+2 5-10% late,82,19363,29.5,7.2,4.06,14.8
+3 10-20% late,72,12357,17.0,13.7,3.99,17.0
+4 20%+ late,62,8924,11.8,30.5,3.78,21.9

@@ -122,7 +122,7 @@ def df_to_markdown(df: pd.DataFrame, max_rows: int | None = None) -> str:
 
 def write_catalogue(results: dict[str, pd.DataFrame],
                     out_path: Path = ROOT / "docs" / "QUERIES.md",
-                    max_rows: int = 12) -> Path:
+                    max_rows: int = 20) -> Path:
     """Render the query catalogue (question, SQL, real result, insight)."""
     parts = [
         "# Analytical query catalogue",

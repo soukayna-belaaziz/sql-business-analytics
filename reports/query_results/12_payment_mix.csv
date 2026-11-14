@@ -1,0 +1,5 @@
+payment_type,orders,value_brl,value_pct,avg_payment_brl,avg_installments,six_plus_installments_pct,value_pct_jan_aug_2017,value_pct_jan_aug_2018
+credit_card,75387,12308002.0,78.5,162.6,3.5,21.0,76.9,79.0
+boleto,19477,2817400.0,18.0,144.7,1.0,0.0,20.0,16.9
+voucher,3734,348891.0,2.2,62.4,1.0,0.0,2.6,2.1
+debit_card,1513,212176.0,1.4,140.1,1.0,0.0,0.5,2.0
