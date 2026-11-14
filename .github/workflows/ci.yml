@@ -1,0 +1,32 @@
+# Runs the dbt project and the pytest suite on the hand-made fixture
+# (tests/fixtures/, 5 orders). No data download is needed.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: dbt parse (project compiles)
+        working-directory: olist_dbt
+        env:
+          OLIST_DUCKDB_PATH: ${{ runner.temp }}/ci.duckdb
+        run: dbt parse --profiles-dir . --vars "{raw_dir: ../tests/fixtures}"
+
+      - name: Tests (dbt build + data tests + analytics on the fixture)
+        run: python -m pytest

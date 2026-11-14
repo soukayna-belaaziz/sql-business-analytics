@@ -1,6 +1,10 @@
 duckdb==2.0.0
+dbt-core==1.12.7
+dbt-duckdb==1.11.1
 pandas==3.0.5
 numpy==2.5.3
+statsmodels==0.15.0
+scipy==1.18.1
 matplotlib==3.11.2
 streamlit==1.67.0
 altair==6.3.0
