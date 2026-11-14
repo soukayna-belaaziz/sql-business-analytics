@@ -1,0 +1,16 @@
+# Raw data (downloaded by data/download_data.py, ~64 MB)
+data/raw/
+# Generated database
+*.duckdb
+*.duckdb.wal
+# Power BI CSV exports (regenerate with `make powerbi`)
+powerbi/data/
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+# OS / editors
+.DS_Store
+.idea/
+.vscode/
