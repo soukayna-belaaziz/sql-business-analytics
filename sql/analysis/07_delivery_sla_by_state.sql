@@ -18,4 +18,4 @@ JOIN dim_date     AS d ON o.purchase_date_key = d.date_key
 WHERE o.is_delivered AND d.is_reporting_period
 GROUP BY c.state, c.region
 HAVING count(*) >= 300
-ORDER BY on_time_pct;
+ORDER BY on_time_pct, c.state;

@@ -472,7 +472,7 @@ JOIN dim_date     AS d ON o.purchase_date_key = d.date_key
 WHERE o.is_delivered AND d.is_reporting_period
 GROUP BY c.state, c.region
 HAVING count(*) >= 300
-ORDER BY on_time_pct;
+ORDER BY on_time_pct, c.state;
 ```
 
 </details>
@@ -720,7 +720,7 @@ CROSS JOIN n
 JOIN cat AS ca ON ca.category = p.category_a
 JOIN cat AS cb ON cb.category = p.category_b
 WHERE p.orders_together >= 10          -- minimum support: avoid lift on tiny counts
-ORDER BY p.orders_together DESC
+ORDER BY p.orders_together DESC, p.category_a, p.category_b
 LIMIT 10;
 ```
 
