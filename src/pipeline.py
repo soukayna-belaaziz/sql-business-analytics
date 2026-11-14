@@ -10,10 +10,10 @@ import argparse
 import time
 
 from src.build_db import build_database, table_row_counts
-from src.config import DB_PATH, RAW_DIR, REPORTS_DIR
+from src.config import DB_PATH, RAW_DIR, REPORTS_DIR, SQL_DIR
 from src.export_powerbi import export_mart
 from src.quality import assert_no_errors, run_checks, to_markdown
-from src.queries import run_all, write_catalogue
+from src.queries import df_to_markdown, run_all, write_catalogue
 from src.report import build_figures, write_executive_summary
 
 
@@ -42,7 +42,13 @@ def main() -> None:
 
     figures = build_figures(con, results)
     write_executive_summary(results, figures)
-    print(f"[4/4] {len(figures)} figures + reports/EXECUTIVE_SUMMARY.md")
+    targets = con.execute((SQL_DIR / "report" / "powerbi_validation.sql").read_text()).df()
+    (REPORTS_DIR / "powerbi_validation.md").write_text(
+        "# Power BI reconciliation targets\n\nKPIs computed in SQL "
+        "(`sql/report/powerbi_validation.sql`), reporting period 2017-01 to 2018-08. "
+        "The DAX measures in `powerbi/POWERBI_GUIDE.md` must reproduce these values.\n\n"
+        + df_to_markdown(targets) + "\n", encoding="utf-8")
+    print(f"[4/4] {len(figures)} figures + reports/EXECUTIVE_SUMMARY.md + powerbi_validation.md")
 
     if args.powerbi:
         export_mart(con)
