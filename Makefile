@@ -1,17 +1,20 @@
 PY ?= python
 
-.PHONY: all data pipeline test dashboard screenshot powerbi clean
+.PHONY: all data pipeline test docs dashboard screenshot powerbi clean
 
 all: data pipeline test          ## download data, build DB + report, run tests
 
 data:                            ## download the Olist CSVs into data/raw/
 	$(PY) data/download_data.py
 
-pipeline:                        ## build DuckDB, run DQ checks, queries, charts, summary
+pipeline:                        ## dbt build (ETL + tests), queries, analyses, charts, memo
 	$(PY) -m src.pipeline
 
 test:                            ## pytest on the hand-made fixture
 	$(PY) -m pytest
+
+docs:                            ## dbt docs site + lineage screenshot (needs `make pipeline`)
+	$(PY) scripts/dbt_docs_lineage.py
 
 dashboard:                       ## interactive dashboard on http://localhost:8501
 	streamlit run app.py
@@ -24,4 +27,5 @@ powerbi:                         ## export mart tables as CSV to powerbi/data/
 
 clean:
 	rm -f data/olist.duckdb
+	rm -rf olist_dbt/target olist_dbt/logs
 	rm -rf powerbi/data
